@@ -55,6 +55,12 @@ Invoice        │
 
 ---
 
+## Workflow
+
+![AI Invoice Processing Workflow](workflow01.jpg)
+
+---
+
 ## Architecture Principles
 
 - AI extracts and structures invoice data.
