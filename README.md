@@ -117,4 +117,11 @@ Invoice        │
 
 ---
 
-Built as part of my AI Automation Engineer portfolio.
+## Author
+
+**Alexander Zaytsev**
+
+AI Automation Engineer
+
+- GitHub: https://github.com/AlexZaytsev-ai
+- Email: polonix315@gmail.com
