@@ -90,6 +90,7 @@ Invoice        │
 - AI Invoice Analysis
 - Supplier Lookup
 - Bank Account Validation
+- Composite Business Key
 - Duplicate Detection
 - Change Detection
 - Versioning
@@ -110,7 +111,7 @@ Invoice        │
 ## Future Improvements
 
 - PostgreSQL
-- OCR support
+- OCR support for scanned invoices
 - ERP integration
 - Approval workflow
 - Audit logging
