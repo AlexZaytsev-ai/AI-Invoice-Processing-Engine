@@ -86,8 +86,6 @@ This sub-workflow creates a new Bitrix24 item or updates the existing one using 
 
 ---
 
----
-
 ## Import and Setup
 
 The workflow exports are sanitized for public use. Credentials, personal IDs, and private service URLs are not included.
