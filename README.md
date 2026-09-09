@@ -1,5 +1,7 @@
 # AI Invoice Processing Engine
 
+[Русская версия](README_RU.md)
+
 AI-powered invoice processing workflow built with **n8n** that extracts invoice data from PDF files, validates business rules, prevents duplicate records, stores invoices in PostgreSQL, and synchronizes them with Bitrix24.
 
 ---
