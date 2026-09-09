@@ -52,6 +52,12 @@ Invoice Data Valid?
 
 ---
 
+### Bitrix24 Sync Sub-workflow
+
+This sub-workflow creates a new Bitrix24 item or updates the existing one using `bitrix_item_id` stored in PostgreSQL.
+
+![Bitrix24 Sync Sub-workflow](sub-workflow-bitrix.jpg)
+
 ## Architecture Principles
 
 * AI extracts and structures invoice data.
