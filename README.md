@@ -86,6 +86,21 @@ This sub-workflow creates a new Bitrix24 item or updates the existing one using 
 
 ---
 
+---
+
+## Import and Setup
+
+The workflow exports are sanitized for public use. Credentials, personal IDs, and private service URLs are not included.
+
+1. Import `bitrix24-sync-subworkflow.json` into n8n.
+2. Configure PostgreSQL and Bitrix24 OAuth2 credentials in the sub-workflow.
+3. Replace `YOUR_BITRIX24_PORTAL` in both Bitrix24 HTTP Request nodes.
+4. Import `invoice-processing-workflow.json`.
+5. Configure Gmail, OpenAI, PostgreSQL, and Telegram credentials.
+6. Replace `YOUR_TELEGRAM_CHAT_ID` in the Telegram nodes.
+7. Select the imported Bitrix24 sub-workflow in both Execute Workflow nodes.
+8. Test the create, update, duplicate, and manual-review scenarios before activation.
+
 ## Key Features
 
 * PDF text extraction
