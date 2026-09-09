@@ -99,6 +99,8 @@ The workflow exports are sanitized for public use. Credentials, personal IDs, an
 7. Select the imported Bitrix24 sub-workflow in both Execute Workflow nodes.
 8. Test the create, update, duplicate, and manual-review scenarios before activation.
 
+---
+
 ## Key Features
 
 * PDF text extraction
