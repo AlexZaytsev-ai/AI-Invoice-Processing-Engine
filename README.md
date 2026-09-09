@@ -48,7 +48,7 @@ Invoice Data Valid?
 
 ## Workflow
 
-![AI Invoice Processing Workflow](workflow01.jpg)
+![AI Invoice Processing Workflow](workflow-main.jpg)
 
 ---
 
