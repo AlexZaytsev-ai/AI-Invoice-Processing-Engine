@@ -1,0 +1,833 @@
+{
+  "name": "AI Invoice Processing Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -256,
+        -192
+      ],
+      "id": "7a50c2a1-23d1-4863-b802-1e9443595fe7",
+      "name": "Extract from File Извлечь текст"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -480,
+        -192
+      ],
+      "id": "74c22cb0-274a-4717-98e9-c56867caa403",
+      "name": "Get Invoice Email Получить письмо"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": []
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -688,
+        -192
+      ],
+      "id": "7ac6fdc8-10db-45b8-a774-b913edc4eafe",
+      "name": "Gmail Invoice Trigger"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.1",
+          "mode": "list",
+          "cachedResultName": "GPT-5.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an AI assistant that extracts structured information from supplier invoices.\n\nYou will receive the plain text extracted from a PDF invoice.\n\nYour task is to extract the required fields and return ONLY a valid JSON object that matches the provided JSON Schema.\n\nRules:\n\n- Do not invent information.\n- If a field is missing, return null.\n- Preserve the original values whenever possible.\n- Amounts must be returned as numbers.\n- Dates must use the YYYY-MM-DD format when possible.\n- Invoice numbers and tax identifiers must be returned as strings.\n- Return only JSON.\n- Do not include explanations or comments.\n\nThe document may contain OCR errors or inconsistent formatting.\nExtract the information as accurately as possible."
+            },
+            {
+              "content": "={{ $json.text }}"
+            },
+            {}
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"document_type\": {\n      \"type\": \"string\",\n      \"enum\": [\"invoice\", \"not_invoice\"]\n    },\n    \"invoice_number\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"invoice_date\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Invoice date in YYYY-MM-DD format\"\n    },\n    \"supplier_name\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"supplier_inn\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"amount\": {\n      \"type\": [\"number\", \"null\"]\n    },\n    \"currency\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Three-letter currency code, for example RUB, USD, EUR\"\n    },\n    \"vat_amount\": {\n      \"type\": [\"number\", \"null\"]\n    },\n    \"bank_account\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"payment_due_date\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Payment due date in YYYY-MM-DD format\"\n    },\n    \"missing_fields\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"document_type\",\n    \"invoice_number\",\n    \"invoice_date\",\n    \"supplier_name\",\n    \"supplier_inn\",\n    \"amount\",\n    \"currency\",\n    \"vat_amount\",\n    \"bank_account\",\n    \"payment_due_date\",\n    \"missing_fields\"\n  ],\n  \"additionalProperties\": false\n}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -32,
+        -192
+      ],
+      "id": "864809f9-702b-4afa-bfc2-180160910cf1",
+      "name": "Проанализировать инвойс"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8ad11eb9-553b-4d58-b1fe-0208581efb5b",
+              "name": "document_type",
+              "value": "={{ $json.output[0].content[0].text.document_type }}",
+              "type": "string"
+            },
+            {
+              "id": "4b3f5097-80c7-4b71-a3db-f128a3aee17b",
+              "name": "invoice_number",
+              "value": "={{ $json.output[0].content[0].text.invoice_number }}",
+              "type": "string"
+            },
+            {
+              "id": "0add0e3d-d3c4-445e-b6fd-f4f6802ecc16",
+              "name": "invoice_date",
+              "value": "={{ $json.output[0].content[0].text.invoice_date }}",
+              "type": "string"
+            },
+            {
+              "id": "105a3db4-0d02-4763-bc13-25d8e92c3442",
+              "name": "supplier_name",
+              "value": "={{ $json.output[0].content[0].text.supplier_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a3001774-3630-4c48-9fbc-f1197f149c0c",
+              "name": "supplier_inn",
+              "value": "={{ $json.output[0].content[0].text.supplier_inn }}",
+              "type": "string"
+            },
+            {
+              "id": "fcd6da4b-b12a-402a-ab33-27fcdd4b7401",
+              "name": "amount",
+              "value": "={{ $json.output[0].content[0].text.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "ce441af8-77b5-4cf3-9f17-efd0558a7933",
+              "name": "currency",
+              "value": "={{ $json.output[0].content[0].text.currency }}",
+              "type": "string"
+            },
+            {
+              "id": "16ff0b09-5bca-48aa-bbc4-d43a9f8cb22d",
+              "name": "vat_amount",
+              "value": "={{ $json.output[0].content[0].text.vat_amount }}",
+              "type": "number"
+            },
+            {
+              "id": "08a58956-b824-446b-933e-40ba4883c2c5",
+              "name": "bank_account",
+              "value": "={{ $json.output[0].content[0].text.bank_account }}",
+              "type": "string"
+            },
+            {
+              "id": "7bbefc4a-2477-4623-9df1-6d30023ddc70",
+              "name": "payment_due_date",
+              "value": "={{ $json.output[0].content[0].text.payment_due_date }}",
+              "type": "string"
+            },
+            {
+              "id": "40412398-7709-4fa9-9139-6ca0e4736850",
+              "name": "missing_fields",
+              "value": "={{ $json.output[0].content[0].text.missing_fields }}",
+              "type": "array"
+            },
+            {
+              "id": "98cf5d17-f701-4991-a9b0-2fb37b7b902e",
+              "name": "status",
+              "value": "processed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        -192
+      ],
+      "id": "31ba11d1-9eda-4be0-a770-d5d38ffd5eee",
+      "name": "Prepare Invoice Data Подготовить данные"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3d04141d-eea7-44e3-a825-a64563b0f1f9",
+              "leftValue": "={{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}",
+              "rightValue": "={{ $json.bank_account }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1184,
+        -224
+      ],
+      "id": "4a3bef59-8896-4709-b210-df26b0b7e100",
+      "name": "Bank Account Match? Проверить банковский счет"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "08dbeb2c-a404-4328-a28e-3012f144ee66",
+              "leftValue": "={{ $json.invoice_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        208
+      ],
+      "id": "27caf3e2-2a81-4223-b55d-c056c9064e67",
+      "name": "Invoice Exists? Инвойс существует?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "501f3275-9cf3-4214-a02d-11f5ae2c0e13",
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": "={{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -64,
+        112
+      ],
+      "id": "61b97616-6bc1-42db-9e66-7561bd9f6538",
+      "name": "Invoice Changed? Инвойс изменился?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3dc63456-fef5-45de-83ca-c042a8e374cf",
+              "leftValue": "={{ $json.supplier_inn }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        944,
+        -208
+      ],
+      "id": "81abfd31-eae5-4820-b93c-a743a6d17925",
+      "name": "Supplier Found? Поставщик найден?"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✅ Новый инвойс зарегистрирован\n\n📄 Invoice:\n{{ $json.invoice_number }}\n\n🏢 Поставщик:\n{{ $json.supplier_name }}\n\n🆔 ИНН:\n{{ $json.supplier_inn }}\n\n💰 Сумма:\n{{ $json.amount }} {{ $json.currency }}\n\n💳 Счет:\n{{ $json.bank_account }}\n\n📌 Статус:\n{{ $json.status }}\n\n🔢 Версия:\n{{ $json.version }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        320
+      ],
+      "id": "96f7887e-4234-4f8a-9d70-8b3af060b0ca",
+      "name": "Invoice Created Новый инвойс"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔄 Инвойс обновлен\n\n📄 Invoice:\n{{ $json.invoice_number }}\n\n🏢 Поставщик:\n{{ $json.supplier_name }}\n\n🆔 ИНН:\n{{ $json.supplier_inn }}\n\n💰 Сумма:\n{{ $json.amount }} {{ $json.currency }}\n\n💳 Счет:\n{{ $json.bank_account }}\n\n📌 Статус:\n{{ $json.status }}\n\n🔢 Версия:\n{{ $json.version }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        96
+      ],
+      "id": "b01f85a6-6670-4058-9f23-6ca680eb760b",
+      "name": "Invoice Updated Инвойс обновлен"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Требуется ручная проверка\n\nПричина:\nПоставщик не найден в справочнике.\n\n📄 Invoice:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n\n🏢 Поставщик:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n\n🆔 ИНН:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n\n💰 Сумма:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.amount }}\n\nДобавьте поставщика в справочник или проверьте корректность реквизитов.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        64
+      ],
+      "id": "7b291e8f-5432-4fde-8968-bde1aa4669ef",
+      "name": "Supplier Not Found Поставщик не найден"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Требуется ручная проверка инвойса\n\nПричина:\nБанковский счет поставщика не совпадает со справочником.\n\n📄 Invoice:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n\n🏢 Поставщик:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n\n🆔 ИНН:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n\n💳 Счет из PDF:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}\n\n💳 Счет из справочника:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}\n\nПроверьте реквизиты перед дальнейшей обработкой.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1424,
+        -208
+      ],
+      "id": "b4fe5104-37e1-4544-b97e-c39498e6a3b7",
+      "name": " Account Mismatch Счет не совпадает"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM suppliers\nWHERE supplier_inn = $1;",
+        "options": {
+          "queryReplacement": "={{ $json.supplier_inn }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        736,
+        -208
+      ],
+      "id": "8587dd5b-86d9-45f0-bf10-da0b9ef70842",
+      "name": "Find Supplier Найти поставщика",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM invoices\nWHERE supplier_inn = $1 AND invoice_number = $2;",
+        "options": {
+          "queryReplacement": "={{ $json.supplier_inn }}, {{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -688,
+        208
+      ],
+      "id": "d94cb1c6-c851-494c-a8f5-30c585a47012",
+      "name": "Find Existing Invoice  Найти существующий инвойс",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoices (invoice_number, invoice_date, supplier_name, supplier_inn, amount, currency, vat_amount, bank_account, status)\nVALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)\nON CONFLICT (supplier_inn, invoice_number)\nDO UPDATE SET amount = EXCLUDED.amount,  vat_amount = EXCLUDED.vat_amount, bank_account = EXCLUDED.bank_account, status = EXCLUDED.status, version = invoices.version + 1, updated_at = NOW()\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_date }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.amount }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.currency }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.vat_amount }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.status }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -256,
+        320
+      ],
+      "id": "6970231d-51fc-4cd3-8536-3509982ed4b2",
+      "name": "Upsert Invoice (Create)"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO invoices (\n  invoice_number,\n  invoice_date,\n  supplier_name,\n  supplier_inn,\n  amount,\n  currency,\n  vat_amount,\n  bank_account,\n  status\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n\nON CONFLICT (supplier_inn, invoice_number)\nDO UPDATE SET\n  invoice_date = EXCLUDED.invoice_date,\n  supplier_name = EXCLUDED.supplier_name,\n  amount = EXCLUDED.amount,\n  currency = EXCLUDED.currency,\n  vat_amount = EXCLUDED.vat_amount,\n  bank_account = EXCLUDED.bank_account,\n  status = EXCLUDED.status,\n  version = invoices.version + 1,\n  updated_at = NOW()\n\nWHERE\n  invoices.amount IS DISTINCT FROM EXCLUDED.amount\n  OR invoices.currency IS DISTINCT FROM EXCLUDED.currency\n  OR invoices.vat_amount IS DISTINCT FROM EXCLUDED.vat_amount\n  OR invoices.invoice_date IS DISTINCT FROM EXCLUDED.invoice_date\n  OR invoices.bank_account IS DISTINCT FROM EXCLUDED.bank_account\n\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_date }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.amount }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.currency }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.vat_amount }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}\n{{ $('Prepare Invoice Data Подготовить данные').item.json.status }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        128,
+        96
+      ],
+      "id": "e8084b4b-9c86-40aa-b4f9-655b3a2b040f",
+      "name": "Upsert Invoice (Update)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c62783b-4618-4e85-bf1b-cf657d666383",
+              "leftValue": "={{ ($json.missing_fields ?? []).filter(field => ['invoice_number', 'supplier_inn', 'bank_account'].includes(field)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "79167d52-ac08-4348-b687-57e34f8f9b9e",
+              "leftValue": "={{ $json.amount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        -192
+      ],
+      "id": "cdf44eab-f508-4aba-bc5a-a6619382b9e8",
+      "name": "Invoice Data Valid?"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Инвойс не прошёл проверку\n\nНомер: {{ $json.invoice_number || 'не найден' }}\nПоставщик: {{ $json.supplier_name || 'не найден' }}\nИНН: {{ $json.supplier_inn || 'не найден' }}\nСумма: {{ $json.amount }} {{ $json.currency }}\nПропущенные поля: `{{ $json.missing_fields.length ? $json.missing_fields.join(', ') : 'нет' }}`",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        64
+      ],
+      "id": "0406f0ce-5830-41d5-96dd-6c6171423d80",
+      "name": "Invoice Validation Failed"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_BITRIX_SYNC_WORKFLOW_ID",
+          "mode": "id",
+          "cachedResultUrl": "",
+          "cachedResultName": "Sync Invoice to Bitrix24"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        96
+      ],
+      "id": "d3edad11-f385-4a8b-84c0-f547db356ae2",
+      "name": "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "YOUR_BITRIX_SYNC_WORKFLOW_ID",
+          "mode": "id",
+          "cachedResultUrl": "",
+          "cachedResultName": "Sync Invoice to Bitrix24"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        320
+      ],
+      "id": "039f0f9a-0743-4c2e-90f8-57c260bf6eb7",
+      "name": "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $input.first().json;\nconst incoming = $('Prepare Invoice Data Подготовить данные').first().json;\n\nconst changed =\n  Number(stored.amount) !== Number(incoming.amount) ||\n  String(stored.currency) !== String(incoming.currency) ||\n  Number(stored.vat_amount) !== Number(incoming.vat_amount) ||\n  String(stored.invoice_date).slice(0, 10) !== String(incoming.invoice_date).slice(0, 10) ||\n  String(stored.bank_account) !== String(incoming.bank_account);\n\nreturn [\n  {\n    json: {\n      ...stored,\n      changed,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        112
+      ],
+      "id": "cde95daf-f8a2-4505-a683-53d362c961b5",
+      "name": "Compare Invoice Data — Сравнить данные инвойса"
+    },
+    {
+      "parameters": {
+        "content": "Workflow получает PDF-инвойс из Gmail, извлекает текст, AI приводит его к структуре, затем n8n валидирует обязательные данные. Проверяем поставщика и банковский счёт в PostgreSQL. По паре ИНН поставщика и номера инвойса ищем существующую запись. Новый инвойс создаём в PostgreSQL и Bitrix24; существующий обновляем только при изменении ключевых полей. Связь с карточкой Bitrix хранится в PostgreSQL через bitrix_item_id, поэтому дубли не создаются. На проблемных случаях отправляем менеджеру уведомление для ручной проверки.",
+        "height": 272,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -1072
+      ],
+      "id": "340edea8-79bb-4fa6-8231-5edba2db0bbe",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract from File Извлечь текст": {
+      "main": [
+        [
+          {
+            "node": "Проанализировать инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Email Получить письмо": {
+      "main": [
+        [
+          {
+            "node": "Extract from File Извлечь текст",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Invoice Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Invoice Email Получить письмо",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проанализировать инвойс": {
+      "main": [
+        [
+          {
+            "node": "Prepare Invoice Data Подготовить данные",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Data Подготовить данные": {
+      "main": [
+        [
+          {
+            "node": "Invoice Data Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bank Account Match? Проверить банковский счет": {
+      "main": [
+        [
+          {
+            "node": "Find Existing Invoice  Найти существующий инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": " Account Mismatch Счет не совпадает",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Exists? Инвойс существует?": {
+      "main": [
+        [
+          {
+            "node": "Compare Invoice Data — Сравнить данные инвойса",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Invoice (Create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Changed? Инвойс изменился?": {
+      "main": [
+        [
+          {
+            "node": "Upsert Invoice (Update)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Supplier Found? Поставщик найден?": {
+      "main": [
+        [
+          {
+            "node": "Bank Account Match? Проверить банковский счет",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supplier Not Found Поставщик не найден",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Supplier Найти поставщика": {
+      "main": [
+        [
+          {
+            "node": "Supplier Found? Поставщик найден?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Existing Invoice  Найти существующий инвойс": {
+      "main": [
+        [
+          {
+            "node": "Invoice Exists? Инвойс существует?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Invoice (Create)": {
+      "main": [
+        [
+          {
+            "node": "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Invoice (Update)": {
+      "main": [
+        [
+          {
+            "node": "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Data Valid?": {
+      "main": [
+        [
+          {
+            "node": "Find Supplier Найти поставщика",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoice Validation Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'": {
+      "main": [
+        [
+          {
+            "node": "Invoice Updated Инвойс обновлен",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Sync Invoice to Bitrix24 / Синхронизировать инвойс с Bitrix24'1": {
+      "main": [
+        [
+          {
+            "node": "Invoice Created Новый инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare Invoice Data — Сравнить данные инвойса": {
+      "main": [
+        [
+          {
+            "node": "Invoice Changed? Инвойс изменился?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "mxc20CI0GXP793Jy",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "nodeGroups": []
+}

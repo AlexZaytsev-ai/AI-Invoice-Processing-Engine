@@ -1,0 +1,226 @@
+{
+  "name": "Sync Invoice to Bitrix24 / Синхронизировать инвойс PostgreSQL с Bitrix24",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        -80
+      ],
+      "id": "e4f241c3-ff9d-45a6-ac05-5788715f86f2",
+      "name": "Execute Sub-workflow Trigger — Триггер запуска под воркфлоу"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2b922593-b367-4b4e-94ed-2762d446b424",
+              "leftValue": "={{ $json.bitrix_item_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -560,
+        -80
+      ],
+      "id": "f7bc79b6-d06e-4675-8436-b0b67dcbe84f",
+      "name": "Bitrix Item Exists? — Карточка Bitrix24 существует?"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE invoices\nSET bitrix_item_id = $1\nWHERE invoice_id = $2\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ $json.result.item.id }}, {{ $('Execute Sub-workflow Trigger — Триггер запуска под воркфлоу').item.json.invoice_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -64,
+        64
+      ],
+      "id": "01c30ae5-95ee-42d6-824d-ef859bd1bae8",
+      "name": "Save Bitrix Item ID — Сохранить ID карточки Bitrix24"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_BITRIX24_PORTAL/rest/crm.item.update.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({\n  entityTypeId: 1038,\n  id: Number($json.bitrix_item_id),\n  fields: {\n    title: `Счёт ${$json.invoice_number} — ${$json.supplier_name} — ${$json.amount} ${$json.currency}`,\n    opportunity: Number($json.amount),\n    currencyId: $json.currency,\n    ufCrm8_1787304863483: $json.invoice_number,\n    ufCrm8_1787305054698: $json.invoice_date.slice(0, 10),\n    ufCrm8_1787305592336: $json.supplier_name,\n    ufCrm8_1787305644504: $json.supplier_inn,\n    ufCrm8_1787305691411: $json.bank_account,\n    ufCrm8_1787305743675: `${$json.vat_amount} ${$json.currency}`,\n    ufCrm8_1787305818382: Number($json.invoice_id),\n    ufCrm8_1787305880854: Number($json.version)\n  }\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -288,
+        -208
+      ],
+      "id": "2e4c64de-5486-4ebd-9cbd-ef3ef83dba09",
+      "name": "Update Incoming Invoice — Обновить входящий счёт",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM invoices\nWHERE invoice_id = $1;",
+        "options": {
+          "queryReplacement": "={{ $('Execute Sub-workflow Trigger — Триггер запуска под воркфлоу').item.json.invoice_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -80,
+        -208
+      ],
+      "id": "2e3a66d1-5e81-4bcf-b7af-586ac5135259",
+      "name": "Return Updated Invoice — Вернуть обновлённый инвойс"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_BITRIX24_PORTAL/rest/crm.item.add.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "oAuth2Api",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    entityTypeId: 1038,\n    fields: {\n      title: `Счёт ${$json.invoice_number} — ${$json.supplier_name} — ${$json.amount} ${$json.currency}`,\n      opportunity: Number($json.amount),\n      currencyId: $json.currency,\n      ufCrm8_1787304863483: $json.invoice_number,\n      ufCrm8_1787305054698: $json.invoice_date.slice(0, 10),\n      ufCrm8_1787305592336: $json.supplier_name,\n      ufCrm8_1787305644504: $json.supplier_inn,\n      ufCrm8_1787305691411: $json.bank_account,\n      ufCrm8_1787305743675: `${$json.vat_amount} ${$json.currency}`,\n      ufCrm8_1787305818382: Number($json.invoice_id),\n      ufCrm8_1787305880854: Number($json.version)\n    }\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -288,
+        64
+      ],
+      "id": "75c18564-f704-4b73-a870-a783f9663341",
+      "name": "Create Incoming Invoice — Создать входящий счёт"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item) => ({\n  json: { ...item.json },\n  binary: item.binary,\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        -80
+      ],
+      "id": "80dbf893-8ba9-4ecb-8b6a-38d055897bd0",
+      "name": "Copy Invoice Data"
+    },
+    {
+      "parameters": {
+        "content": "Подворкфлоу Sync Invoice to Bitrix24 \n\nГлавная идея:\nПодворкфлоу получает готовый инвойс из основного workflow и пересобирает входные данные через Code-ноду. Затем IF проверяет bitrix_item_id. Если ID есть, система обновляет соответствующую карточку Bitrix24; при временной ошибке делает до трёх попыток. Если ID нет, создаёт новую карточку Bitrix24, получает её ID и сохраняет его в существующую запись инвойса в PostgreSQL.\n\nКогда запускается:\nПодворкфлоу вызывается основным workflow только после успешного создания или обновления инвойса в PostgreSQL.\nЕсли пришёл дубль без изменений, подворкфлоу не запускается.\n\nШаги:\n\n1. Execute Sub-workflow Trigger\nПолучает от основного workflow данные инвойса.\n\n2. Copy Invoice Data\nПересобирает входные данные в новый стабильный item, сохраняя JSON и binary. Нода добавлена после ошибки прохождения верхней ветки — не удалять.\n\n3. Bitrix Item Exists?\nПроверяет, заполнено ли поле bitrix_item_id.\n\nЕсть bitrix_item_id:\n→ Update Incoming Invoice\n→ отправляет Bitrix24 команду обновить существующую карточку по её ID.\nНапример: bitrix_item_id = 8 → обновить карточку ID 8.\n\nНет bitrix_item_id:\n→ Create Incoming Invoice\n→ создаёт новую карточку Bitrix24.\n→ Bitrix24 возвращает ID новой карточки.\n→ Save Bitrix Item ID сохраняет этот ID в PostgreSQL.\n\nВетка создания:\nCreate Incoming Invoice\n→ Save Bitrix Item ID (сохраняет ID и возвращает строку)\n\nВетка обновления:\nUpdate Incoming Invoice\n→ Return Updated Invoice (возвращает актуальную строку)\n\nВажно:\n- entityTypeId 1038 — смарт-процесс Bitrix24 «Входящие счета».\n- bitrix_item_id связывает строку в PostgreSQL с конкретной карточкой Bitrix24.\n- PostgreSQL хранит истину и связи.\n- Bitrix24 — интерфейс, где менеджер работает со счётом.\n• Update Incoming Invoice: Retry включён — 3 попытки с интервалом 1 сек.\n• Create Incoming Invoice: Retry выключен, чтобы повторный запрос не создал дубликат.",
+        "height": 1184,
+        "width": 592
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1712,
+        -1504
+      ],
+      "id": "c2805875-14be-4252-a36b-71f45393004b",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Sub-workflow Trigger — Триггер запуска под воркфлоу": {
+      "main": [
+        [
+          {
+            "node": "Copy Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bitrix Item Exists? — Карточка Bitrix24 существует?": {
+      "main": [
+        [
+          {
+            "node": "Update Incoming Invoice — Обновить входящий счёт",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Incoming Invoice — Создать входящий счёт",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Incoming Invoice — Обновить входящий счёт": {
+      "main": [
+        [
+          {
+            "node": "Return Updated Invoice — Вернуть обновлённый инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Incoming Invoice — Создать входящий счёт": {
+      "main": [
+        [
+          {
+            "node": "Save Bitrix Item ID — Сохранить ID карточки Bitrix24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Copy Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Bitrix Item Exists? — Карточка Bitrix24 существует?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": []
+}
