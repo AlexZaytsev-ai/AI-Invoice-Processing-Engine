@@ -1,24 +1,16 @@
-# AI Invoice Processing Engine
+AI Invoice Processing Engine
 
-AI-powered invoice processing workflow built with **n8n** that extracts invoice data from PDF files, validates business rules, prevents duplicate records, and automatically creates or updates invoices.
+AI-powered invoice processing workflow built with n8n that extracts invoice data from PDF files, validates business rules, prevents duplicate records, stores invoices in PostgreSQL, and synchronizes them with Bitrix24.
 
----
+Business Problem
 
-## Business Problem
+Companies receive supplier invoices by email every day. Manual processing is slow, error-prone, and can lead to duplicate records or payment based on incomplete or unverified bank details.
 
-Companies receive invoices by email every day. Manual processing is slow, error-prone, and increases the risk of duplicate records and incorrect payments.
+This workflow automates invoice processing, validates critical business rules, and sends uncertain cases to a manager for manual review before data is processed further.
 
-This workflow automates invoice processing and validates critical business rules before data is stored.
+Workflow Architecture
 
----
-
-## Workflow Architecture
-
-```text
 Gmail Trigger
-      │
-      ▼
-Get Invoice Email
       │
       ▼
 Extract PDF Text
@@ -30,99 +22,149 @@ AI Invoice Analysis
 Prepare Invoice Data
       │
       ▼
-Supplier Lookup
+Invoice Data Valid?
       │
-      ▼
+ ┌────┴───────────────────────┐
+ │ No                         │ Yes
+ ▼                            ▼
+Manual Review          Find Supplier by INN
+                               │
+                               ▼
+                     Bank Account Match?
+                               │
+                    ┌──────────┴──────────┐
+                    │ No                  │ Yes
+                    ▼                     ▼
+              Manual Review       Find Existing Invoice
+                                           │
+                                           ▼
+                                   Invoice Exists?
+                                           │
+                              ┌────────────┴────────────┐
+                              │ No                       │ Yes
+                              ▼                          ▼
+                  Create in PostgreSQL          Invoice Changed?
+                                                        │
+                                          ┌─────────────┴─────────────┐
+                                          │ No                        │ Yes
+                                          ▼                           ▼
+                                     Stop: duplicate          Update PostgreSQL
+                                                 │                   │
+                                                 └─────────┬─────────┘
+                                                           ▼
+                                            Sync Bitrix24 sub-workflow
+                                                           │
+                                                           ▼
+                                              Telegram notification
+
+Workflow
+
+
+
+Architecture Principles
+
+AI extracts and structures invoice data; deterministic workflow logic makes business decisions.
+
+Invoice data must contain invoice_number, supplier_inn, and bank_account; amount must be greater than zero.
+
+Supplier Registry in PostgreSQL is the Single Source of Truth for supplier bank details.
+
+Suppliers are identified by INN, not by a potentially inconsistent company name.
+
+Composite business key supplier_inn + invoice_number prevents duplicate invoices.
+
+Existing invoices are updated only when key business data changes; repeated unchanged emails stop safely.
+
+Manual Review handles missing, unknown, or suspicious data.
+
+Tech Stack
+
+Technology
+
+Purpose
+
+n8n
+
+Workflow Automation and Routing
+
+Gmail API
+
+Email Trigger and PDF Attachments
+
+OpenAI
+
+Structured Invoice Analysis
+
+PostgreSQL
+
+Supplier Registry and Invoice Storage
+
+Bitrix24 REST API + OAuth2
+
+Create and Update Invoice Items
+
+JavaScript
+
+Compare Invoice Data Before Update
+
+Telegram
+
+Manager Notifications
+
+Key Features
+
+PDF text extraction
+
+AI Invoice Analysis
+
+Required Data Validation
+
+Supplier Lookup by INN
+
 Bank Account Validation
-      │
-      ▼
-Invoice Lookup
-      │
-      ▼
-Invoice Exists?
-      │
- ┌────┴─────┐
- │          │
- ▼          ▼
-Create   Invoice Changed?
-Invoice        │
-               ▼
-         Update Invoice
-               │
-               ▼
-        Notifications
-```
 
----
+Composite Business Key
 
-## Workflow
+Duplicate and Change Detection
 
-![AI Invoice Processing Workflow](workflow01.jpg)
+Invoice Versioning
 
----
+Bitrix24 Sync Sub-workflow
 
-## Architecture Principles
+Retry On Fail for Bitrix24 Updates
 
-- AI extracts and structures invoice data.
-- Business decisions are handled by deterministic workflow logic.
-- Supplier Registry is the Single Source of Truth.
-- Composite Business Keys prevent duplicate invoices.
-- Existing invoices are updated instead of duplicated.
-- Manual Review handles uncertain scenarios.
+Manual Review and Telegram Notifications
 
----
+Business Rules
 
-## Tech Stack
+Validate required invoice data before processing.
 
-| Technology | Purpose |
-|------------|---------|
-| n8n | Workflow Automation |
-| Gmail API | Email Trigger |
-| OpenAI | Invoice Analysis |
-| Google Sheets | Data Storage |
-| Telegram | Notifications |
+Validate supplier against the PostgreSQL Supplier Registry using supplier_inn.
 
----
+Verify the bank account before further processing; do not update it automatically when it differs.
 
-## Key Features
+Detect duplicate invoices using supplier_inn + invoice_number.
 
-- PDF text extraction
-- AI Invoice Analysis
-- Supplier Lookup
-- Bank Account Validation
-- Composite Business Key
-- Duplicate Detection
-- Change Detection
-- Versioning
-- Manual Review
-- Telegram Notifications
+Update invoices only when business data changes.
 
----
+Keep the Bitrix24 item ID in PostgreSQL to update the same item instead of creating a duplicate.
 
-## Business Rules
+Future Improvements
 
-- Validate supplier against Supplier Registry.
-- Verify bank account.
-- Detect duplicate invoices using **supplier_inn + invoice_number**.
-- Update invoices only when business data changes.
+OCR support for scanned invoices
 
----
+Approval workflow for high-risk invoices
 
-## Future Improvements
+Audit logging
 
-- PostgreSQL
-- OCR support for scanned invoices
-- ERP integration
-- Approval workflow
-- Audit logging
+Monitoring and alerting
 
----
+Author
 
-## Author
-
-**Alexander Zaytsev**
+Alexander Zaytsev
 
 AI Automation Engineer
 
-- GitHub: https://github.com/AlexZaytsev-ai
-- Email: polonix315@gmail.com
+GitHub: https://github.com/AlexZaytsev-ai
+
+Email: polonix315@gmail.com
