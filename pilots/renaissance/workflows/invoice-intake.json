@@ -1,0 +1,830 @@
+{
+  "name": "Ренессанс main — согласование счетов",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "attachment_0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -288,
+        -32
+      ],
+      "id": "149580d8-cab3-4df9-b7c4-fc4483b39369",
+      "name": "Extract from File Извлечь текст"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": "={{ $json.id }}",
+        "simple": false,
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -512,
+        -32
+      ],
+      "id": "dbfb0b99-46d3-47b2-953a-e7a21d828993",
+      "name": "Get Invoice Email Получить письмо"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an AI assistant that extracts structured information from supplier invoices.\n\nYou will receive the plain text extracted from a PDF invoice.\n\nYour task is to extract the required fields and return ONLY a valid JSON object that matches the provided JSON Schema.\n\nRules:\n\n- Do not invent information.\n- If a field is missing, return null.\n- Preserve the original values whenever possible.\n- Amounts must be returned as numbers.\n- Dates must use the YYYY-MM-DD format when possible.\n- Invoice numbers and tax identifiers must be returned as strings.\n- Return only JSON.\n- Do not include explanations or comments.\n\nThe document may contain OCR errors or inconsistent formatting.\nExtract the information as accurately as possible."
+            },
+            {
+              "content": "={{ $json.text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"document_type\": {\n      \"type\": \"string\",\n      \"enum\": [\"invoice\", \"not_invoice\"]\n    },\n    \"invoice_number\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"invoice_date\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Invoice date in YYYY-MM-DD format\"\n    },\n    \"supplier_name\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"supplier_inn\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"amount\": {\n      \"type\": [\"number\", \"null\"]\n    },\n    \"currency\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Three-letter currency code, for example RUB, USD, EUR\"\n    },\n    \"vat_amount\": {\n      \"type\": [\"number\", \"null\"]\n    },\n    \"bank_account\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"payment_due_date\": {\n      \"type\": [\"string\", \"null\"],\n      \"description\": \"Payment due date in YYYY-MM-DD format\"\n    },\n    \"missing_fields\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\"\n      }\n    }\n  },\n  \"required\": [\n    \"document_type\",\n    \"invoice_number\",\n    \"invoice_date\",\n    \"supplier_name\",\n    \"supplier_inn\",\n    \"amount\",\n    \"currency\",\n    \"vat_amount\",\n    \"bank_account\",\n    \"payment_due_date\",\n    \"missing_fields\"\n  ],\n  \"additionalProperties\": false\n}"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -48,
+        -32
+      ],
+      "id": "620bb6e2-d85f-4fbf-96c6-2740402b8708",
+      "name": "Проанализировать инвойс"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8ad11eb9-553b-4d58-b1fe-0208581efb5b",
+              "name": "document_type",
+              "value": "={{ $json.output[0].content[0].text.document_type }}",
+              "type": "string"
+            },
+            {
+              "id": "4b3f5097-80c7-4b71-a3db-f128a3aee17b",
+              "name": "invoice_number",
+              "value": "={{ $json.output[0].content[0].text.invoice_number }}",
+              "type": "string"
+            },
+            {
+              "id": "0add0e3d-d3c4-445e-b6fd-f4f6802ecc16",
+              "name": "invoice_date",
+              "value": "={{ $json.output[0].content[0].text.invoice_date }}",
+              "type": "string"
+            },
+            {
+              "id": "105a3db4-0d02-4763-bc13-25d8e92c3442",
+              "name": "supplier_name",
+              "value": "={{ $json.output[0].content[0].text.supplier_name }}",
+              "type": "string"
+            },
+            {
+              "id": "a3001774-3630-4c48-9fbc-f1197f149c0c",
+              "name": "supplier_inn",
+              "value": "={{ $json.output[0].content[0].text.supplier_inn }}",
+              "type": "string"
+            },
+            {
+              "id": "fcd6da4b-b12a-402a-ab33-27fcdd4b7401",
+              "name": "amount",
+              "value": "={{ $json.output[0].content[0].text.amount }}",
+              "type": "number"
+            },
+            {
+              "id": "ce441af8-77b5-4cf3-9f17-efd0558a7933",
+              "name": "currency",
+              "value": "={{ $json.output[0].content[0].text.currency }}",
+              "type": "string"
+            },
+            {
+              "id": "16ff0b09-5bca-48aa-bbc4-d43a9f8cb22d",
+              "name": "vat_amount",
+              "value": "={{ $json.output[0].content[0].text.vat_amount }}",
+              "type": "number"
+            },
+            {
+              "id": "08a58956-b824-446b-933e-40ba4883c2c5",
+              "name": "bank_account",
+              "value": "={{ $json.output[0].content[0].text.bank_account }}",
+              "type": "string"
+            },
+            {
+              "id": "7bbefc4a-2477-4623-9df1-6d30023ddc70",
+              "name": "payment_due_date",
+              "value": "={{ $json.output[0].content[0].text.payment_due_date }}",
+              "type": "string"
+            },
+            {
+              "id": "40412398-7709-4fa9-9139-6ca0e4736850",
+              "name": "missing_fields",
+              "value": "={{ $json.output[0].content[0].text.missing_fields }}",
+              "type": "array"
+            },
+            {
+              "id": "98cf5d17-f701-4991-a9b0-2fb37b7b902e",
+              "name": "status",
+              "value": "processed",
+              "type": "string"
+            },
+            {
+              "id": "5d452b33-eb3e-4902-bb35-a146680e54c5",
+              "name": "event_id",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "360d8ad2-4edb-4ab0-8c1b-903562f170fa",
+              "name": "event_name",
+              "value": "Тестовая выставка Ренессанс",
+              "type": "string"
+            },
+            {
+              "id": "2ec8140c-321d-4a05-9034-fd1cfff030a6",
+              "name": "expense_category",
+              "value": "Хозяйственные расходы",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -32
+      ],
+      "id": "dfd803c0-a73c-4cf1-8e88-52992135d1ac",
+      "name": "Prepare Invoice Data Подготовить данные"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3d04141d-eea7-44e3-a825-a64563b0f1f9",
+              "leftValue": "={{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}",
+              "rightValue": "={{ $json.bank_account }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1168,
+        -64
+      ],
+      "id": "3a54ce1a-102e-49c5-a44c-32aac988aecc",
+      "name": "Bank Account Match? Проверить банковский счет"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "08dbeb2c-a404-4328-a28e-3012f144ee66",
+              "leftValue": "={{ $json.invoice_number }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -496,
+        336
+      ],
+      "id": "716e20c4-9e73-4531-b4b9-6c3cc3ba4c4b",
+      "name": "Invoice Exists? Инвойс существует?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "501f3275-9cf3-4214-a02d-11f5ae2c0e13",
+              "leftValue": "={{ $json.changed }}",
+              "rightValue": "={{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        240
+      ],
+      "id": "1d809943-4332-40a2-80c3-96a4fad3bd0a",
+      "name": "Invoice Changed? Инвойс изменился?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3dc63456-fef5-45de-83ca-c042a8e374cf",
+              "leftValue": "={{ $json.supplier_inn }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        928,
+        -48
+      ],
+      "id": "acef366b-1f71-464e-a277-a03adcfe828d",
+      "name": "Supplier Found? Поставщик найден?"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=📋 Счёт на согласование\n\nВыставка: {{ $('Prepare Invoice Data Подготовить данные').item.json.event_name }}\nКатегория: {{ $json.expense_category }}\n\nСчёт № {{ $json.invoice_number }}\nПоставщик: {{ $json.supplier_name }}\nСумма: {{ $json.amount }} {{ $json.currency }}\n\nВерсия: {{ $json.version }}\nСтатус: ожидает согласования",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Согласовать",
+                    "additionalFields": {
+                      "callback_data": "={{ 'ren:approve:' + $json.invoice_id + ':' + $json.version }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Отклонить",
+                    "additionalFields": {
+                      "callback_data": "={{ 'ren:reject:' + $json.invoice_id + ':' + $json.version }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        448
+      ],
+      "id": "0f713b43-f624-40f7-8389-3ae111921402",
+      "name": "Invoice Created Новый инвойс"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=📋 Счёт на согласование\n\nВыставка: {{ $('Prepare Invoice Data Подготовить данные').item.json.event_name }}\nКатегория: {{ $json.expense_category }}\n\nСчёт № {{ $json.invoice_number }}\nПоставщик: {{ $json.supplier_name }}\nСумма: {{ $json.amount }} {{ $json.currency }}\n\nВерсия: {{ $json.version }}\nСтатус: ожидает согласования",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Согласовать",
+                    "additionalFields": {
+                      "callback_data": "={{ 'ren:approve:' + $json.invoice_id + ':' + $json.version }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Отклонить",
+                    "additionalFields": {
+                      "callback_data": "={{ 'ren:reject:' + $json.invoice_id + ':' + $json.version }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        352,
+        224
+      ],
+      "id": "8b81591d-cd28-4c52-93e6-45330e09da74",
+      "name": "Invoice Updated Инвойс обновлен",
+      "retryOnFail": true,
+      "maxTries": 2
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Требуется ручная проверка\n\nПричина:\nПоставщик не найден в справочнике.\n\n📄 Invoice:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n\n🏢 Поставщик:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n\n🆔 ИНН:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n\n💰 Сумма:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.amount }}\n\nДобавьте поставщика в справочник или проверьте корректность реквизитов.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        208
+      ],
+      "id": "90b43729-8fe6-4236-85eb-7a28ffc897e6",
+      "name": "Supplier Not Found Поставщик не найден"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Требуется ручная проверка инвойса\n\nПричина:\nБанковский счет поставщика не совпадает со справочником.\n\n📄 Invoice:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}\n\n🏢 Поставщик:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_name }}\n\n🆔 ИНН:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn }}\n\n💳 Счет из PDF:\n{{ $('Prepare Invoice Data Подготовить данные').item.json.bank_account }}\n\n💳 Счет из справочника:\n{{ $json.bank_account }}\n\nПроверьте реквизиты перед дальнейшей обработкой.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        -48
+      ],
+      "id": "f8bed6ee-a9d3-42e2-b882-78fe5868d442",
+      "name": " Account Mismatch Счет не совпадает"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM renaissance.suppliers\nWHERE supplier_inn = $1;",
+        "options": {
+          "queryReplacement": "={{ $json.supplier_inn }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        720,
+        -48
+      ],
+      "id": "edddf112-7289-4289-b266-8c0f845d893f",
+      "name": "Find Supplier Найти поставщика",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM renaissance.invoices\nWHERE supplier_inn = $1\n  AND invoice_number = $2;",
+        "options": {
+          "queryReplacement": "={{ $json.supplier_inn }}, {{ $('Prepare Invoice Data Подготовить данные').item.json.invoice_number }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -704,
+        336
+      ],
+      "id": "c4d9530f-a6df-44e5-bf70-2a29fda1c2a9",
+      "name": "Find Existing Invoice  Найти существующий инвойс",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO renaissance.invoices (\n  invoice_number, invoice_date, supplier_name,\n  supplier_inn, amount, currency, vat_amount,\n  bank_account, status, event_id, expense_category\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\nON CONFLICT (supplier_inn, invoice_number)\nDO NOTHING\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Prepare Invoice Data Подготовить данные').item.json.invoice_number,\n  $('Prepare Invoice Data Подготовить данные').item.json.invoice_date,\n  $('Prepare Invoice Data Подготовить данные').item.json.supplier_name,\n  $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn,\n  $('Prepare Invoice Data Подготовить данные').item.json.amount,\n  $('Prepare Invoice Data Подготовить данные').item.json.currency,\n  $('Prepare Invoice Data Подготовить данные').item.json.vat_amount,\n  $('Prepare Invoice Data Подготовить данные').item.json.bank_account,\n  $('Prepare Invoice Data Подготовить данные').item.json.status,\n  $('Prepare Invoice Data Подготовить данные').item.json.event_id,\n  $('Prepare Invoice Data Подготовить данные').item.json.expense_category\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -272,
+        448
+      ],
+      "id": "125fd49d-fd9a-46bc-bd52-18603bb3c968",
+      "name": "Upsert Invoice (Create)"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE renaissance.invoices\nSET\n  invoice_date = $2,\n  supplier_name = $3,\n  amount = $5,\n  currency = $6,\n  vat_amount = $7,\n  bank_account = $8,\n  status = $9,\n  event_id = $10,\n  expense_category = $11,\n  version = version + 1,\n  updated_at = NOW(),\n  approval_status = 'pending',\n  decided_by = NULL,\n  decided_at = NULL\nWHERE supplier_inn = $4\n  AND invoice_number = $1\nRETURNING *;",
+        "options": {
+          "queryReplacement": "={{ [\n  $('Prepare Invoice Data Подготовить данные').item.json.invoice_number,\n  $('Prepare Invoice Data Подготовить данные').item.json.invoice_date,\n  $('Prepare Invoice Data Подготовить данные').item.json.supplier_name,\n  $('Prepare Invoice Data Подготовить данные').item.json.supplier_inn,\n  $('Prepare Invoice Data Подготовить данные').item.json.amount,\n  $('Prepare Invoice Data Подготовить данные').item.json.currency,\n  $('Prepare Invoice Data Подготовить данные').item.json.vat_amount,\n  $('Prepare Invoice Data Подготовить данные').item.json.bank_account,\n  $('Prepare Invoice Data Подготовить данные').item.json.status,\n  $('Prepare Invoice Data Подготовить данные').item.json.event_id,\n  $('Prepare Invoice Data Подготовить данные').item.json.expense_category\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        144,
+        224
+      ],
+      "id": "f996a60a-1073-4e84-bd48-95b3f8c0ecee",
+      "name": "Upsert Invoice (Update)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c62783b-4618-4e85-bf1b-cf657d666383",
+              "leftValue": "={{ ($json.missing_fields ?? []).filter(field => ['invoice_number', 'supplier_inn', 'bank_account'].includes(field)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "array",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "79167d52-ac08-4348-b687-57e34f8f9b9e",
+              "leftValue": "={{ $json.amount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "93a657ff-1c40-4527-9c12-b65801be9be3",
+      "name": "Invoice Data Valid?"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=⚠️ Инвойс не прошёл проверку\n\nНомер: {{ $json.invoice_number || 'не найден' }}\nПоставщик: {{ $json.supplier_name || 'не найден' }}\nИНН: {{ $json.supplier_inn || 'не найден' }}\nСумма: {{ $json.amount }} {{ $json.currency }}\nПропущенные поля: `{{ $json.missing_fields.length ? $json.missing_fields.join(', ') : 'нет' }}`",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        224
+      ],
+      "id": "26341d77-35be-4647-b92e-2b4f317dbc9d",
+      "name": "Invoice Validation Failed"
+    },
+    {
+      "parameters": {
+        "jsCode": "const stored = $input.first().json;\nconst incoming = $('Prepare Invoice Data Подготовить данные').first().json;\n\nconst number = value =>\n  value === null || value === undefined || value === ''\n    ? null\n    : Number(value);\n\nconst text = value => String(value ?? '');\nconst date = value => text(value).slice(0, 10);\n\nconst changed =\n  number(stored.amount) !== number(incoming.amount) ||\n  text(stored.currency) !== text(incoming.currency) ||\n  number(stored.vat_amount) !== number(incoming.vat_amount) ||\n  date(stored.invoice_date) !== date(incoming.invoice_date) ||\n  text(stored.bank_account) !== text(incoming.bank_account) ||\n  text(stored.supplier_name) !== text(incoming.supplier_name) ||\n  number(stored.event_id) !== number(incoming.event_id) ||\n  text(stored.expense_category) !== text(incoming.expense_category);\n\nreturn [{ json: { ...stored, changed } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -272,
+        240
+      ],
+      "id": "703f8214-d9c3-4b47-a135-3a2b7afa2a15",
+      "name": "Compare Invoice Data — Сравнить данные инвойса"
+    },
+    {
+      "parameters": {
+        "content": "Workflow получает PDF-счёт из Gmail, извлекает текст, а ИИ преобразует его в структурированные данные. Проверяем обязательные поля, поставщика и банковский счёт. По ИНН и номеру счёта ищем запись в PostgreSQL: новый счёт создаём, изменённый обновляем, одинаковый повторно не обрабатываем. При изменении увеличиваем версию и сбрасываем решение. Счёт отправляем в Telegram для согласования или отклонения. Отдельный workflow сохраняет решение, проверяя доступ и версию: старые и повторные кнопки не меняют результат. Третий workflow каждые 15 минут обновляет реестр Google Sheets по invoice_id без дублей. PostgreSQL хранит основные данные; выставка и категория пока задаются вручную.",
+        "height": 208,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        -736
+      ],
+      "id": "16af7165-cbee-4c19-8576-1426db28d6a2",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [],
+          "q": "in:inbox subject:REN-DEMO has:attachment filename:pdf"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        -32
+      ],
+      "id": "d99d4332-9f76-46b9-8cc4-2398e91cba65",
+      "name": "Gmail Invoice Trigger — Получить PDF-счёт"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Вымышленные реквизиты для demo/01-new.pdf.\nINSERT INTO renaissance.suppliers\n  (supplier_inn, supplier_name, bank_account)\nVALUES\n  ('0000000001', 'ДЕМО ПОСТАВЩИК', '00000000000000000001')\nON CONFLICT (supplier_inn) DO NOTHING\nRETURNING *;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -704,
+        -320
+      ],
+      "id": "d5e1efeb-7e1d-48b8-bf2e-b640b01fe673",
+      "name": "Add Supplier — Добавить поставщика"
+    }
+  ],
+  "connections": {
+    "Extract from File Извлечь текст": {
+      "main": [
+        [
+          {
+            "node": "Проанализировать инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Invoice Email Получить письмо": {
+      "main": [
+        [
+          {
+            "node": "Extract from File Извлечь текст",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проанализировать инвойс": {
+      "main": [
+        [
+          {
+            "node": "Prepare Invoice Data Подготовить данные",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invoice Data Подготовить данные": {
+      "main": [
+        [
+          {
+            "node": "Invoice Data Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bank Account Match? Проверить банковский счет": {
+      "main": [
+        [
+          {
+            "node": "Find Existing Invoice  Найти существующий инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": " Account Mismatch Счет не совпадает",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Exists? Инвойс существует?": {
+      "main": [
+        [
+          {
+            "node": "Compare Invoice Data — Сравнить данные инвойса",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert Invoice (Create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Changed? Инвойс изменился?": {
+      "main": [
+        [
+          {
+            "node": "Upsert Invoice (Update)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Supplier Found? Поставщик найден?": {
+      "main": [
+        [
+          {
+            "node": "Bank Account Match? Проверить банковский счет",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supplier Not Found Поставщик не найден",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Supplier Найти поставщика": {
+      "main": [
+        [
+          {
+            "node": "Supplier Found? Поставщик найден?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Existing Invoice  Найти существующий инвойс": {
+      "main": [
+        [
+          {
+            "node": "Invoice Exists? Инвойс существует?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Invoice (Create)": {
+      "main": [
+        [
+          {
+            "node": "Invoice Created Новый инвойс",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Invoice (Update)": {
+      "main": [
+        [
+          {
+            "node": "Invoice Updated Инвойс обновлен",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invoice Data Valid?": {
+      "main": [
+        [
+          {
+            "node": "Find Supplier Найти поставщика",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invoice Validation Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare Invoice Data — Сравнить данные инвойса": {
+      "main": [
+        [
+          {
+            "node": "Invoice Changed? Инвойс изменился?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Invoice Trigger — Получить PDF-счёт": {
+      "main": [
+        [
+          {
+            "node": "Get Invoice Email Получить письмо",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

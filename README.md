@@ -2,6 +2,8 @@
 
 [Русская версия](README_RU.md)
 
+**Renaissance pilot:** [Telegram invoice approvals and Google Sheets register](pilots/renaissance/README.md). Includes three sanitized workflows, a setup guide and documented manual tests.
+
 AI-powered invoice processing workflow built with **n8n** that extracts invoice data from PDF files, validates business rules, prevents duplicate records, stores invoices in PostgreSQL, and synchronizes them with Bitrix24.
 
 ---
@@ -148,7 +150,7 @@ The workflow exports are sanitized for public use. Credentials, personal IDs, an
 ## Future Improvements
 
 * OCR support for scanned invoices
-* Approval workflow for high-risk invoices
+* Multi-step approval policies (single-step approval is demonstrated in the [Renaissance pilot](pilots/renaissance/README.md))
 * Audit logging
 * Monitoring and alerting
 
@@ -162,3 +164,4 @@ AI Automation Engineer
 
 * GitHub: https://github.com/AlexZaytsev-ai
 * Email: [polonix315@gmail.com](mailto:polonix315@gmail.com)
+
